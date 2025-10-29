@@ -1,0 +1,2141 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Polygon Bounding Box Generator</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        text-align: center;
+        padding: 30px;
+      }
+
+      .header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+      }
+
+      .header p {
+        font-size: 1.1em;
+        opacity: 0.9;
+      }
+
+      .content {
+        padding: 40px;
+      }
+
+      .input-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+      }
+
+      .input-group {
+        background: #f8f9fa;
+        padding: 25px;
+        border-radius: 10px;
+        border: 2px dashed #dee2e6;
+        transition: all 0.3s ease;
+      }
+
+      .input-group:hover {
+        border-color: #4facfe;
+        transform: translateY(-2px);
+      }
+
+      .input-group label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: #495057;
+        font-size: 1.1em;
+      }
+
+      .file-input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.3s ease;
+      }
+
+      .file-input:focus {
+        outline: none;
+        border-color: #4facfe;
+      }
+
+      .coordinate-input-container {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .coordinate-input {
+        flex: 2;
+        padding: 12px;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.3s ease;
+      }
+
+      .coordinate-input:focus {
+        outline: none;
+        border-color: #4facfe;
+      }
+
+      .label-input {
+        flex: 1;
+        padding: 12px;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.3s ease;
+      }
+
+      .label-input:focus {
+        outline: none;
+        border-color: #4facfe;
+      }
+
+      .add-box-btn {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+      }
+
+      .add-box-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 15px rgba(79, 172, 254, 0.3);
+      }
+
+      .add-box-btn:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .polygon-textarea {
+        width: 100%;
+        min-height: 120px;
+        padding: 12px;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: "Courier New", monospace;
+        resize: vertical;
+        transition: border-color 0.3s ease;
+        margin-bottom: 10px;
+      }
+
+      .polygon-textarea:focus {
+        outline: none;
+        border-color: #4facfe;
+      }
+
+      .bounding-box-list {
+        margin-top: 15px;
+        background: white;
+        border-radius: 8px;
+        max-height: 200px;
+        overflow-y: auto;
+        display: none;
+      }
+
+      .bounding-box-list.has-boxes {
+        display: block;
+        border: 1px solid #dee2e6;
+      }
+
+      .list-header {
+        font-weight: 600;
+        color: #495057;
+        padding: 10px 15px;
+        border-bottom: 1px solid #dee2e6;
+        background: #f8f9fa;
+        font-size: 0.9em;
+      }
+
+      .box-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 15px;
+        border-bottom: 1px solid #f1f3f4;
+        transition: background-color 0.2s ease;
+      }
+
+      .box-item:hover {
+        background-color: #f8f9fa;
+      }
+
+      .box-item:last-child {
+        border-bottom: none;
+      }
+
+      .box-info {
+        flex: 1;
+      }
+
+      .box-coordinates {
+        font-family: "Courier New", monospace;
+        font-size: 0.9em;
+        color: #495057;
+        font-weight: 500;
+      }
+
+      .box-label {
+        font-size: 0.8em;
+        color: #6c757d;
+        margin-top: 2px;
+      }
+
+      .box-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        margin-right: 10px;
+        border: 2px solid white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+
+      .box-actions {
+        display: flex;
+        gap: 5px;
+      }
+
+      .remove-box-btn {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 6px 10px;
+        font-size: 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+
+      .remove-box-btn:hover {
+        background: #c82333;
+      }
+
+      .bulk-import-section {
+        margin-top: 20px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border: 2px dashed #dee2e6;
+        transition: all 0.3s ease;
+      }
+
+      .bulk-import-section:hover {
+        border-color: #4facfe;
+        transform: translateY(-1px);
+      }
+
+      .bulk-import-section label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: #495057;
+        font-size: 1.1em;
+      }
+
+      .bulk-textarea {
+        width: 100%;
+        min-height: 120px;
+        padding: 12px;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: "Courier New", monospace;
+        resize: vertical;
+        transition: border-color 0.3s ease;
+        margin-bottom: 10px;
+      }
+
+      .bulk-textarea:focus {
+        outline: none;
+        border-color: #4facfe;
+      }
+
+      .import-btn {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 100%;
+      }
+
+      .import-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+      }
+
+      .import-btn:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .clear-all-btn {
+        background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-left: 10px;
+      }
+
+      .clear-all-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(220, 53, 69, 0.3);
+      }
+
+      /* Commented out sections */
+      .commented-section {
+        display: none;
+      }
+
+      .help-text {
+        font-size: 0.9em;
+        color: #6c757d;
+        margin-top: 8px;
+      }
+
+      .generate-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        font-size: 1.1em;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: block;
+        margin: 20px auto;
+      }
+
+      .generate-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+      }
+
+      .generate-btn:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .result-section {
+        margin-top: 30px;
+        text-align: center;
+      }
+
+      .image-container {
+        position: relative;
+        display: inline-block;
+        margin: 20px auto;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      }
+
+      .uploaded-image {
+        max-width: 100%;
+        max-height: 600px;
+        display: block;
+      }
+
+      .bounding-box {
+        position: absolute;
+        border: 2px solid #ff4757;
+        background: rgba(255, 71, 87, 0.1);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);
+      }
+
+      .polygon-overlay {
+        position: absolute;
+        pointer-events: none;
+      }
+
+      .coordinates-display {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 15px;
+        border-left: 4px solid #4facfe;
+      }
+
+      .error-message {
+        background: #ffe6e6;
+        color: #d63031;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+        border-left: 4px solid #d63031;
+      }
+
+      /* Tool Tabs */
+      .tool-tabs {
+        display: flex;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #dee2e6;
+        gap: 5px;
+        flex-wrap: wrap;
+      }
+
+      .tab-btn {
+        background: none;
+        border: none;
+        padding: 15px 25px;
+        font-size: 1.1em;
+        font-weight: 600;
+        color: #6c757d;
+        cursor: pointer;
+        border-radius: 8px 8px 0 0;
+        transition: all 0.3s ease;
+        position: relative;
+      }
+
+      .tab-btn:hover {
+        background: #f8f9fa;
+        color: #4facfe;
+      }
+
+      .tab-btn.active {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(79, 172, 254, 0.3);
+      }
+
+      .tab-btn.active::after {
+        content: "";
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      }
+
+      /* Tool Sections */
+      .tool-section {
+        animation: fadeIn 0.3s ease-in;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* PDF Merger Specific Styles */
+      .merge-controls {
+        text-align: center;
+        margin: 30px 0;
+      }
+
+      .pdf-status {
+        margin: 20px auto;
+        max-width: 400px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border: 2px solid #dee2e6;
+      }
+
+      .status-message {
+        text-align: center;
+        margin-bottom: 15px;
+        font-weight: 600;
+        color: #495057;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: #dee2e6;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+        width: 0%;
+        transition: width 0.3s ease;
+        border-radius: 4px;
+      }
+
+      .pdf-result {
+        text-align: center;
+        margin: 30px 0;
+      }
+
+      .pdf-preview {
+        background: #f8f9fa;
+        border: 2px solid #28a745;
+        border-radius: 15px;
+        padding: 30px;
+        max-width: 500px;
+        margin: 0 auto;
+        box-shadow: 0 10px 30px rgba(40, 167, 69, 0.1);
+      }
+
+      .pdf-preview h3 {
+        color: #28a745;
+        margin-bottom: 15px;
+        font-size: 1.5em;
+      }
+
+      .pdf-preview p {
+        color: #6c757d;
+        margin-bottom: 25px;
+        font-size: 1.1em;
+      }
+
+      .download-btn {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        font-size: 1.1em;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .download-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(40, 167, 69, 0.3);
+      }
+
+      .download-btn:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      @media (max-width: 768px) {
+        .input-section {
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+
+        .content {
+          padding: 20px;
+        }
+
+        .header h1 {
+          font-size: 2em;
+        }
+
+        .tool-tabs {
+          flex-direction: column;
+        }
+
+        .tab-btn {
+          border-radius: 8px;
+          margin-bottom: 5px;
+        }
+
+        .tab-btn.active::after {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🎯 Multi-Tool Generator</h1>
+        <p>
+          Upload images for polygon bounding boxes or merge PDF files - all in
+          one place
+        </p>
+      </div>
+
+      <div class="content">
+        <!-- Tool Tabs -->
+        <div class="tool-tabs">
+          <button
+            id="boundingBoxTab"
+            class="tab-btn active"
+            onclick="switchTool('boundingBox')"
+          >
+            🎯 Bounding Box Generator
+          </button>
+          <button
+            id="pdfMergerTab"
+            class="tab-btn"
+            onclick="switchTool('pdfMerger')"
+          >
+            📄 PDF Merger
+          </button>
+          <button
+            id="zipMergerTab"
+            class="tab-btn"
+            onclick="switchTool('zipMerger')"
+          >
+            🗜️ ZIP → Merged PDF
+          </button>
+          <button
+            id="measurementTab"
+            class="tab-btn"
+            onclick="switchTool('measurement')"
+          >
+            📏 Measurement Tool
+          </button>
+        </div>
+
+        <!-- Bounding Box Tool -->
+        <div id="boundingBoxTool" class="tool-section">
+          <div class="input-section">
+            <div class="input-group">
+              <label for="imageInput">📸 Upload Image</label>
+              <input
+                type="file"
+                id="imageInput"
+                class="file-input"
+                accept="image/*"
+              />
+              <div class="help-text">
+                Supported formats: JPG, PNG, GIF, WebP
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label for="polygonCoords">📐 Polygon Coordinates</label>
+              <textarea
+                id="polygonCoords"
+                class="polygon-textarea"
+                placeholder='Enter polygon coordinates in JSON format:&#10;[&#10;  {"x": 4017.0, "y": 2203.0},&#10;  {"x": 468.0, "y": 2203.0},&#10;  {"x": 468.0, "y": 1132.0},&#10;  {"x": 4017.0, "y": 1132.0}&#10;]&#10;&#10;Or with angle:&#10;{"coords": [{"x": 4017.0, "y": 2203.0}, {"x": 468.0, "y": 2203.0}, {"x": 468.0, "y": 1132.0}, {"x": 4017.0, "y": 1132.0}], "angle": 45}'
+              ></textarea>
+              <div class="coordinate-input-container">
+                <input
+                  type="text"
+                  id="polygonLabel"
+                  class="label-input"
+                  placeholder="Label (optional)"
+                />
+                <input
+                  type="number"
+                  id="polygonAngle"
+                  class="label-input"
+                  placeholder="Angle (0-360°)"
+                  min="0"
+                  max="360"
+                  step="0.1"
+                />
+                <button id="addPolygonBtn" class="add-box-btn" type="button">
+                  Add Polygon
+                </button>
+              </div>
+              <div class="help-text">
+                Enter polygon coordinates as JSON array with x,y points.
+                Optionally specify rotation angle in degrees.
+              </div>
+
+              <div class="bulk-import-section">
+                <label for="bulkData">📋 Bulk Import Polygon Data</label>
+                <textarea
+                  id="bulkData"
+                  class="bulk-textarea"
+                  placeholder='Paste multiple polygon data here...&#10;&#10;Format:&#10;Polygon 1: {"coords": [{"x": 100, "y": 100}, {"x": 200, "y": 100}, {"x": 200, "y": 200}, {"x": 100, "y": 200}], "angle": 45}&#10;Polygon 2: {"coords": [{"x": 300, "y": 300}, {"x": 400, "y": 300}, {"x": 400, "y": 400}], "angle": 90}&#10;&#10;Or simple format:&#10;Polygon 1: [{"x": 100, "y": 100}, {"x": 200, "y": 100}, {"x": 200, "y": 200}, {"x": 100, "y": 200}]'
+                ></textarea>
+                <button id="importBtn" class="import-btn" type="button">
+                  Import All Polygons
+                </button>
+              </div>
+
+              <div id="boundingBoxList" class="bounding-box-list">
+                <div class="list-header">Added Polygons:</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Commented out: Pixel Distance Measurement Tool -->
+          <div class="measurement-section commented-section">
+            <div class="section-header">
+              <h2>📏 Pixel Distance Measurement Tool</h2>
+              <p>
+                Upload an image and click two points to measure the pixel
+                distance between them
+              </p>
+            </div>
+          </div>
+
+          <!-- Commented out: Image Comparison Section -->
+          <div class="comparison-section commented-section">
+            <div class="section-header">
+              <h2>🔄 Image Comparison Tool</h2>
+              <p>
+                Upload two images and mark bounding boxes on each for comparison
+              </p>
+            </div>
+          </div>
+
+          <button id="generateBtn" class="generate-btn" disabled>
+            Generate Visualization
+          </button>
+
+          <div
+            id="errorMessage"
+            class="error-message"
+            style="display: none"
+          ></div>
+
+          <div class="result-section">
+            <div
+              id="imageContainer"
+              class="image-container"
+              style="display: none"
+            >
+              <img
+                id="uploadedImage"
+                class="uploaded-image"
+                alt="Uploaded image"
+              />
+              <div id="boundingBoxContainer"></div>
+            </div>
+
+            <div
+              id="coordinatesDisplay"
+              class="coordinates-display"
+              style="display: none"
+            >
+              <strong>Polygon Information:</strong>
+              <div id="coordinatesText"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PDF Merger Tool -->
+        <div id="pdfMergerTool" class="tool-section" style="display: none">
+          <div class="input-section">
+            <div class="input-group">
+              <label for="pdfFile1">📄 First PDF File</label>
+              <input
+                type="file"
+                id="pdfFile1"
+                class="file-input"
+                accept=".pdf"
+              />
+              <div class="help-text">Select the first PDF to merge</div>
+            </div>
+
+            <div class="input-group">
+              <label for="pdfFile2">📄 Second PDF File</label>
+              <input
+                type="file"
+                id="pdfFile2"
+                class="file-input"
+                accept=".pdf"
+              />
+              <div class="help-text">Select the second PDF to merge</div>
+            </div>
+          </div>
+
+          <div class="merge-controls">
+            <button id="mergePdfBtn" class="generate-btn" disabled>
+              📄 Merge PDFs
+            </button>
+
+            <div id="pdfStatus" class="pdf-status" style="display: none">
+              <div class="status-message"></div>
+              <div class="progress-bar">
+                <div class="progress-fill"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="pdfResult" class="pdf-result" style="display: none">
+            <div class="pdf-preview">
+              <h3>✅ PDF Merge Complete</h3>
+              <p>Your merged PDF is ready for download!</p>
+              <button id="downloadBtn" class="download-btn">
+                💾 Download Merged PDF
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ZIP → Merged PDF Tool -->
+        <div id="zipMergerTool" class="tool-section" style="display: none">
+          <div class="input-section">
+            <div class="input-group">
+              <label for="zipInput">🗜️ Upload ZIP containing PDFs</label>
+              <input
+                type="file"
+                id="zipInput"
+                class="file-input"
+                accept=".zip,application/zip"
+              />
+              <div class="help-text">
+                The ZIP can contain PDFs in nested folders. Non-PDF files will be ignored.
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label>📋 Files detected in ZIP</label>
+              <div id="zipPdfList" class="bounding-box-list" style="display:block; min-height: 52px;">
+                <div class="list-header">No ZIP loaded yet</div>
+              </div>
+
+              <div class="help-text" style="margin-top:10px;">
+                Order: path (natural, case-insensitive). You can re-order later in code if you need a custom strategy.
+              </div>
+            </div>
+          </div>
+
+          <div class="merge-controls">
+            <button id="mergeZipBtn" class="generate-btn" disabled>
+              🗜️ Merge PDFs from ZIP
+            </button>
+
+            <div id="zipStatus" class="pdf-status" style="display: none">
+              <div class="status-message"></div>
+              <div class="progress-bar">
+                <div class="progress-fill"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="zipResult" class="pdf-result" style="display: none">
+            <div class="pdf-preview">
+              <h3>✅ ZIP Merge Complete</h3>
+              <p>Your merged PDF is ready for download!</p>
+              <button id="zipDownloadBtn" class="download-btn">
+                💾 Download Merged PDF
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Measurement Tool -->
+        <div id="measurementTool" class="tool-section" style="display: none">
+          <div class="input-section">
+            <div class="input-group">
+              <label for="measureImageInput"
+                >📸 Upload Image for Measurement</label
+              >
+              <input
+                type="file"
+                id="measureImageInput"
+                class="file-input"
+                accept="image/*"
+              />
+              <div class="help-text">
+                Click two points on the image to measure pixel distance.
+              </div>
+            </div>
+
+            <div
+              class="input-group"
+              style="
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                justify-content: center;
+              "
+            >
+              <button
+                id="measureResetBtn"
+                class="clear-all-btn"
+                type="button"
+                style="align-self: flex-start"
+              >
+                Reset Measurement
+              </button>
+              <div
+                id="measureInfo"
+                class="coordinates-display"
+                style="display: none"
+              ></div>
+            </div>
+          </div>
+
+          <div class="result-section">
+            <div
+              id="measureContainer"
+              class="image-container"
+              style="display: none"
+            >
+              <img
+                id="measureImage"
+                class="uploaded-image"
+                alt="Measurement image"
+              />
+              <canvas
+                id="measureCanvas"
+                style="position: absolute; top: 0; left: 0"
+              ></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PDF-lib for PDF manipulation -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <!-- JSZip for reading .zip files in the browser -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+    <script>
+      // Tool switching functionality
+      function switchTool(toolName) {
+        // Update tab states
+        document
+          .querySelectorAll(".tab-btn")
+          .forEach((btn) => btn.classList.remove("active"));
+        document.getElementById(toolName + "Tab").classList.add("active");
+
+        // Show/hide tool sections
+        document.querySelectorAll(".tool-section").forEach((section) => {
+          section.style.display = "none";
+        });
+        document.getElementById(toolName + "Tool").style.display = "block";
+      }
+
+      // PDF Merger Class
+      class PDFMerger {
+        constructor() {
+          this.pdfFile1 = document.getElementById("pdfFile1");
+          this.pdfFile2 = document.getElementById("pdfFile2");
+          this.mergePdfBtn = document.getElementById("mergePdfBtn");
+          this.pdfStatus = document.getElementById("pdfStatus");
+          this.pdfResult = document.getElementById("pdfResult");
+          this.downloadBtn = document.getElementById("downloadBtn");
+          this.mergedPdfData = null;
+
+          this.initEventListeners();
+        }
+
+        initEventListeners() {
+          this.pdfFile1.addEventListener("change", () =>
+            this.validateMergeButton()
+          );
+          this.pdfFile2.addEventListener("change", () =>
+            this.validateMergeButton()
+          );
+          this.mergePdfBtn.addEventListener("click", () => this.mergePDFs());
+          this.downloadBtn.addEventListener("click", () =>
+            this.downloadMergedPDF()
+          );
+        }
+
+        validateMergeButton() {
+          const hasFile1 = this.pdfFile1.files.length > 0;
+          const hasFile2 = this.pdfFile2.files.length > 0;
+          this.mergePdfBtn.disabled = !(hasFile1 && hasFile2);
+
+          // Hide previous results when new files are selected
+          if (hasFile1 || hasFile2) {
+            this.pdfResult.style.display = "none";
+          }
+        }
+
+        async mergePDFs() {
+          try {
+            this.showStatus("Reading PDF files...", 10);
+
+            const file1 = this.pdfFile1.files[0];
+            const file2 = this.pdfFile2.files[0];
+
+            if (!file1 || !file2) {
+              throw new Error("Please select both PDF files");
+            }
+
+            this.showStatus("Loading first PDF...", 25);
+            const pdf1ArrayBuffer = await file1.arrayBuffer();
+            const pdf1 = await PDFLib.PDFDocument.load(pdf1ArrayBuffer);
+
+            this.showStatus("Loading second PDF...", 50);
+            const pdf2ArrayBuffer = await file2.arrayBuffer();
+            const pdf2 = await PDFLib.PDFDocument.load(pdf2ArrayBuffer);
+
+            this.showStatus("Creating merged PDF...", 75);
+            const mergedPdf = await PDFLib.PDFDocument.create();
+
+            // Copy pages from first PDF
+            const pdf1Pages = await mergedPdf.copyPages(
+              pdf1,
+              pdf1.getPageIndices()
+            );
+            pdf1Pages.forEach((page) => mergedPdf.addPage(page));
+
+            // Copy pages from second PDF
+            const pdf2Pages = await mergedPdf.copyPages(
+              pdf2,
+              pdf2.getPageIndices()
+            );
+            pdf2Pages.forEach((page) => mergedPdf.addPage(page));
+
+            this.showStatus("Generating download...", 90);
+
+            // Generate the merged PDF
+            this.mergedPdfData = await mergedPdf.save();
+
+            this.showStatus("Complete!", 100);
+
+            // Show success result
+            setTimeout(() => {
+              this.pdfStatus.style.display = "none";
+              this.pdfResult.style.display = "block";
+            }, 500);
+          } catch (error) {
+            this.showError("Error merging PDFs: " + error.message);
+          }
+        }
+
+        showStatus(message, progress) {
+          const statusMessage = this.pdfStatus.querySelector(".status-message");
+          const progressFill = this.pdfStatus.querySelector(".progress-fill");
+
+          statusMessage.textContent = message;
+          progressFill.style.width = progress + "%";
+          this.pdfStatus.style.display = "block";
+        }
+
+        showError(message) {
+          this.pdfStatus.style.display = "none";
+          this.pdfResult.style.display = "none";
+
+          const errorDiv = document.createElement("div");
+          errorDiv.className = "error-message";
+          errorDiv.textContent = message;
+          errorDiv.style.margin = "20px 0";
+
+          const mergeControls = document.querySelector(".merge-controls");
+          mergeControls.appendChild(errorDiv);
+
+          setTimeout(() => {
+            errorDiv.remove();
+          }, 5000);
+        }
+
+        downloadMergedPDF() {
+          if (!this.mergedPdfData) {
+            this.showError("No merged PDF available for download");
+            return;
+          }
+
+          try {
+            const blob = new Blob([this.mergedPdfData], {
+              type: "application/pdf",
+            });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "merged-document.pdf";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            URL.revokeObjectURL(url);
+          } catch (error) {
+            this.showError("Error downloading PDF: " + error.message);
+          }
+        }
+      }
+
+      // ZIP → Merged PDF (client-only)
+      class ZipPdfMerger {
+        constructor() {
+          this.zipInput = document.getElementById("zipInput");
+          this.zipPdfList = document.getElementById("zipPdfList");
+          this.mergeZipBtn = document.getElementById("mergeZipBtn");
+          this.zipStatus = document.getElementById("zipStatus");
+          this.zipResult = document.getElementById("zipResult");
+          this.zipDownloadBtn = document.getElementById("zipDownloadBtn");
+
+          this.pdfEntries = []; // [{path, getArrayBuffer}]
+          this.mergedPdfData = null;
+
+          this.initEvents();
+        }
+
+        initEvents() {
+          this.zipInput.addEventListener("change", () => this.handleZip());
+          this.mergeZipBtn.addEventListener("click", () => this.mergeFromZip());
+          this.zipDownloadBtn.addEventListener("click", () =>
+            this.downloadMergedPDF()
+          );
+        }
+
+        async handleZip() {
+          this.resetUI();
+          const file = this.zipInput.files?.[0];
+          if (!file) {
+            this.renderList([], "No ZIP loaded yet");
+            this.mergeZipBtn.disabled = true;
+            return;
+          }
+
+          try {
+            this.showStatus("Reading ZIP file...", 5);
+            const zip = await JSZip.loadAsync(file);
+
+            const pdfs = [];
+            zip.forEach((relativePath, zipEntry) => {
+              if (!zipEntry.dir && /\.pdf$/i.test(relativePath)) {
+                pdfs.push({
+                  path: relativePath,
+                  getArrayBuffer: () => zipEntry.async("arraybuffer"),
+                });
+              }
+            });
+
+            pdfs.sort((a, b) =>
+              a.path
+                .toLowerCase()
+                .localeCompare(b.path.toLowerCase(), undefined, {
+                  numeric: true,
+                })
+            );
+
+            this.pdfEntries = pdfs;
+
+            if (pdfs.length === 0) {
+              this.renderList([], "No PDFs found in the ZIP");
+              this.mergeZipBtn.disabled = true;
+              this.showStatus("ZIP loaded (no PDFs).", 100);
+              return;
+            }
+
+            this.renderList(pdfs, `Found ${pdfs.length} PDF file(s).`);
+            this.mergeZipBtn.disabled = false;
+            this.showStatus(`ZIP loaded. ${pdfs.length} PDF(s) ready.`, 100);
+          } catch (err) {
+            this.errorToast(`Failed to read ZIP: ${err.message || err}`);
+            this.mergeZipBtn.disabled = true;
+            this.renderList([], "Error reading ZIP");
+            this.zipStatus.style.display = "none";
+          }
+        }
+
+        renderList(items, headerText) {
+          this.zipPdfList.innerHTML = "";
+          const header = document.createElement("div");
+          header.className = "list-header";
+          header.textContent = headerText || `Found ${items.length} PDF(s)`;
+          this.zipPdfList.appendChild(header);
+
+          if (!items.length) return;
+
+          items.forEach((it, idx) => {
+            const row = document.createElement("div");
+            row.className = "box-item";
+            row.innerHTML = `
+              <div class="box-info">
+                <div class="box-coordinates">${idx + 1}. ${it.path}</div>
+                <div class="box-label">Included</div>
+              </div>
+            `;
+            this.zipPdfList.appendChild(row);
+          });
+        }
+
+        async mergeFromZip() {
+          if (!this.pdfEntries.length) {
+            this.errorToast("No PDFs to merge. Load a ZIP first.");
+            return;
+          }
+
+          try {
+            this.zipResult.style.display = "none";
+            this.showStatus("Creating merged PDF...", 10);
+
+            const merged = await PDFLib.PDFDocument.create();
+
+            const total = this.pdfEntries.length;
+            for (let i = 0; i < total; i++) {
+              const entry = this.pdfEntries[i];
+              this.showStatus(
+                `Loading PDF ${i + 1} of ${total}: ${entry.path}`,
+                Math.min(15 + (i * 70) / total, 85)
+              );
+
+              const buf = await entry.getArrayBuffer();
+              const doc = await PDFLib.PDFDocument.load(buf);
+              const pages = await merged.copyPages(doc, doc.getPageIndices());
+              pages.forEach((p) => merged.addPage(p));
+            }
+
+            this.showStatus("Finalizing merged PDF...", 90);
+            this.mergedPdfData = await merged.save();
+
+            this.showStatus("Complete!", 100);
+            setTimeout(() => {
+              this.zipStatus.style.display = "none";
+              this.zipResult.style.display = "block";
+            }, 400);
+          } catch (err) {
+            this.errorToast(
+              `Error merging PDFs from ZIP: ${err.message || err}`
+            );
+            this.zipStatus.style.display = "none";
+            this.zipResult.style.display = "none";
+          }
+        }
+
+        downloadMergedPDF() {
+          if (!this.mergedPdfData) {
+            this.errorToast("No merged PDF available to download.");
+            return;
+          }
+          const blob = new Blob([this.mergedPdfData], {
+            type: "application/pdf",
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "zip-merged.pdf";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+
+        showStatus(message, progress) {
+          const statusMessage = this.zipStatus.querySelector(".status-message");
+          const progressFill = this.zipStatus.querySelector(".progress-fill");
+          statusMessage.textContent = message;
+          progressFill.style.width = `${progress}%`;
+          this.zipStatus.style.display = "block";
+        }
+
+        resetUI() {
+          this.zipStatus.style.display = "none";
+          this.zipResult.style.display = "none";
+          this.mergedPdfData = null;
+          this.pdfEntries = [];
+        }
+
+        errorToast(message) {
+          const div = document.createElement("div");
+          div.className = "error-message";
+          div.textContent = message;
+          div.style.margin = "20px 0";
+          const controls = document.querySelector(
+            "#zipMergerTool .merge-controls"
+          );
+          controls.appendChild(div);
+          setTimeout(() => div.remove(), 5000);
+        }
+      }
+
+      // Pixel Distance Measurement
+      class MeasurementTool {
+        constructor() {
+          this.imageInput = document.getElementById("measureImageInput");
+          this.resetBtn = document.getElementById("measureResetBtn");
+          this.container = document.getElementById("measureContainer");
+          this.image = document.getElementById("measureImage");
+          this.canvas = document.getElementById("measureCanvas");
+          this.info = document.getElementById("measureInfo");
+          this.ctx = this.canvas.getContext("2d");
+          this.points = [];
+          this.scaleX = 1;
+          this.scaleY = 1;
+
+          this.initEvents();
+        }
+
+        initEvents() {
+          this.imageInput.addEventListener("change", () => this.loadImage());
+          this.resetBtn.addEventListener("click", () => this.reset());
+          window.addEventListener("resize", () => this.syncCanvasSize());
+          this.canvas.addEventListener("click", (e) => this.handleClick(e));
+        }
+
+        loadImage() {
+          const file = this.imageInput.files[0];
+          if (!file) {
+            this.reset();
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            this.image.src = e.target.result;
+            this.image.onload = () => {
+              this.container.style.display = "inline-block";
+              this.points = [];
+              this.updateInfo();
+              this.syncCanvasSize();
+              this.clearCanvas();
+            };
+          };
+          reader.readAsDataURL(file);
+        }
+
+        syncCanvasSize() {
+          if (!this.image.naturalWidth) return;
+          const displayWidth = this.image.offsetWidth;
+          const displayHeight = this.image.offsetHeight;
+          this.canvas.width = displayWidth;
+          this.canvas.height = displayHeight;
+          this.scaleX = this.image.naturalWidth / displayWidth;
+          this.scaleY = this.image.naturalHeight / displayHeight;
+          this.redraw();
+        }
+
+        handleClick(event) {
+          if (!this.image.src) return;
+          const rect = this.canvas.getBoundingClientRect();
+          const x = event.clientX - rect.left;
+          const y = event.clientY - rect.top;
+          const point = {
+            displayX: x,
+            displayY: y,
+            naturalX: x * this.scaleX,
+            naturalY: y * this.scaleY,
+          };
+          this.points.push(point);
+          if (this.points.length > 2) this.points.shift();
+          this.redraw();
+          this.updateInfo();
+        }
+
+        reset() {
+          this.points = [];
+          this.clearCanvas();
+          this.info.style.display = "none";
+        }
+
+        clearCanvas() {
+          this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+
+        redraw() {
+          this.clearCanvas();
+          if (this.points.length === 0) return;
+          this.ctx.fillStyle = "#ff4757";
+          this.ctx.strokeStyle = "#ff4757";
+          this.ctx.lineWidth = 2;
+          for (const p of this.points) {
+            this.ctx.beginPath();
+            this.ctx.arc(p.displayX, p.displayY, 5, 0, Math.PI * 2);
+            this.ctx.fill();
+          }
+          if (this.points.length === 2) {
+            const [p1, p2] = this.points;
+            this.ctx.beginPath();
+            this.ctx.moveTo(p1.displayX, p1.displayY);
+            this.ctx.lineTo(p2.displayX, p2.displayY);
+            this.ctx.stroke();
+          }
+        }
+
+        updateInfo() {
+          if (this.points.length < 2) {
+            this.info.style.display = this.points.length ? "block" : "none";
+            if (this.points.length === 1) {
+              const p = this.points[0];
+              this.info.innerHTML = `<strong>First point:</strong> (${Math.round(
+                p.naturalX
+              )}, ${Math.round(p.naturalY)})`;
+            }
+            return;
+          }
+          const [p1, p2] = this.points;
+          const dx = p2.naturalX - p1.naturalX;
+          const dy = p2.naturalY - p1.naturalY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          this.info.style.display = "block";
+          this.info.innerHTML = `
+            <div><strong>Point 1 (px):</strong> (${Math.round(
+              p1.naturalX
+            )}, ${Math.round(p1.naturalY)})</div>
+            <div><strong>Point 2 (px):</strong> (${Math.round(
+              p2.naturalX
+            )}, ${Math.round(p2.naturalY)})</div>
+            <div style="margin-top:8px;"><strong>Distance:</strong> ${distance.toFixed(
+              2
+            )} px</div>
+          `;
+        }
+      }
+
+      class PolygonBoundingBoxGenerator {
+        constructor() {
+          this.imageInput = document.getElementById("imageInput");
+          this.polygonCoords = document.getElementById("polygonCoords");
+          this.polygonLabel = document.getElementById("polygonLabel");
+          this.polygonAngle = document.getElementById("polygonAngle");
+          this.addPolygonBtn = document.getElementById("addPolygonBtn");
+          this.bulkData = document.getElementById("bulkData");
+          this.importBtn = document.getElementById("importBtn");
+          this.generateBtn = document.getElementById("generateBtn");
+          this.imageContainer = document.getElementById("imageContainer");
+          this.uploadedImage = document.getElementById("uploadedImage");
+          this.boundingBoxContainer = document.getElementById(
+            "boundingBoxContainer"
+          );
+          this.boundingBoxList = document.getElementById("boundingBoxList");
+          this.coordinatesDisplay =
+            document.getElementById("coordinatesDisplay");
+          this.coordinatesText = document.getElementById("coordinatesText");
+          this.errorMessage = document.getElementById("errorMessage");
+
+          this.polygons = [];
+          this.colors = [
+            "#ff4757",
+            "#2ed573",
+            "#3742fa",
+            "#ffa502",
+            "#ff6b81",
+            "#70a1ff",
+            "#5352ed",
+            "#ff3838",
+            "#ff9ff3",
+            "#54a0ff",
+            "#5f27cd",
+            "#00d2d3",
+            "#ff9f43",
+            "#10ac84",
+            "#ee5a24",
+          ];
+
+          this.initEventListeners();
+        }
+
+        initEventListeners() {
+          this.imageInput.addEventListener("change", () =>
+            this.handleImageUpload()
+          );
+          this.polygonCoords.addEventListener("input", () =>
+            this.validateAddPolygon()
+          );
+          this.addPolygonBtn.addEventListener("click", () => this.addPolygon());
+          this.importBtn.addEventListener("click", () => this.importBulkData());
+          this.generateBtn.addEventListener("click", () =>
+            this.generateVisualization()
+          );
+
+          this.polygonCoords.addEventListener("keydown", (e) => {
+            if (e.ctrlKey && e.key === "Enter" && !this.addPolygonBtn.disabled) {
+              this.addPolygon();
+            }
+          });
+
+          this.polygonLabel.addEventListener("keypress", (e) => {
+            if (e.key === "Enter" && !this.addPolygonBtn.disabled) {
+              this.addPolygon();
+            }
+          });
+
+          this.polygonAngle.addEventListener("keypress", (e) => {
+            if (e.key === "Enter" && !this.addPolygonBtn.disabled) {
+              this.addPolygon();
+            }
+          });
+
+          this.bulkData.addEventListener("keydown", (e) => {
+            if (e.ctrlKey && e.key === "Enter" && !this.importBtn.disabled) {
+              this.importBulkData();
+            }
+          });
+        }
+
+        handleImageUpload() {
+          const file = this.imageInput.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              this.uploadedImage.src = e.target.result;
+              this.uploadedImage.onload = () => {
+                this.clearAllPolygons();
+                this.validateAddPolygon();
+                this.updateGenerateButton();
+              };
+            };
+            reader.readAsDataURL(file);
+          } else {
+            this.clearAllPolygons();
+            this.validateAddPolygon();
+            this.updateGenerateButton();
+          }
+        }
+
+        validateAddPolygon() {
+          const hasImage = this.imageInput.files.length > 0;
+          const hasPolygonData = this.polygonCoords.value.trim() !== "";
+
+          this.addPolygonBtn.disabled = !(hasImage && hasPolygonData);
+          this.importBtn.disabled = !hasImage;
+          this.hideError();
+        }
+
+        updateGenerateButton() {
+          const hasImage = this.imageInput.files.length > 0;
+          const hasPolygons = this.polygons.length > 0;
+
+          this.generateBtn.disabled = !(hasImage && hasPolygons);
+        }
+
+        parsePolygonCoordinates(input) {
+          try {
+            const data = JSON.parse(input.trim());
+
+            if (data.coords && Array.isArray(data.coords)) {
+              const coords = data.coords;
+              if (coords.length < 3) {
+                throw new Error("Polygon must have at least 3 points");
+              }
+              for (let i = 0; i < coords.length; i++) {
+                const point = coords[i];
+                if (!point.hasOwnProperty("x") || !point.hasOwnProperty("y")) {
+                  throw new Error(
+                    `Point ${i + 1} must have x and y properties`
+                  );
+                }
+                if (typeof point.x !== "number" || typeof point.y !== "number") {
+                  throw new Error(`Point ${i + 1} coordinates must be numbers`);
+                }
+                if (point.x < 0 || point.y < 0) {
+                  throw new Error(
+                    `Point ${i + 1} coordinates cannot be negative`
+                  );
+                }
+              }
+              return coords;
+            } else if (Array.isArray(data)) {
+              const coords = data;
+              if (coords.length < 3) {
+                throw new Error("Polygon must have at least 3 points");
+              }
+              for (let i = 0; i < coords.length; i++) {
+                const point = coords[i];
+                if (!point.hasOwnProperty("x") || !point.hasOwnProperty("y")) {
+                  throw new Error(
+                    `Point ${i + 1} must have x and y properties`
+                  );
+                }
+                if (typeof point.x !== "number" || typeof point.y !== "number") {
+                  throw new Error(`Point ${i + 1} coordinates must be numbers`);
+                }
+                if (point.x < 0 || point.y < 0) {
+                  throw new Error(
+                    `Point ${i + 1} coordinates cannot be negative`
+                  );
+                }
+              }
+              return coords;
+            } else {
+              throw new Error(
+                "Coordinates must be an array or an object with coords property"
+              );
+            }
+          } catch (error) {
+            if (error instanceof SyntaxError) {
+              throw new Error(
+                "Invalid JSON format. Please check your coordinate syntax."
+              );
+            }
+            throw error;
+          }
+        }
+
+        validatePolygonCoordinates(coords, imageWidth, imageHeight) {
+          let clippingOccurred = false;
+          const clippedCoords = coords.map((point) => {
+            let clippedX = point.x;
+            let clippedY = point.y;
+
+            if (point.x < 0) {
+              clippedX = 0;
+              clippingOccurred = true;
+            } else if (point.x > imageWidth) {
+              clippedX = imageWidth;
+              clippingOccurred = true;
+            }
+
+            if (point.y < 0) {
+              clippedY = 0;
+              clippingOccurred = true;
+            } else if (point.y > imageHeight) {
+              clippedY = imageHeight;
+              clippingOccurred = true;
+            }
+
+            return { x: clippedX, y: clippedY };
+          });
+
+          if (clippingOccurred) {
+            this.showWarning(
+              "Some polygon coordinates were clipped to fit within image boundaries. The polygon has been adjusted to stay within the image bounds."
+            );
+          }
+
+          return clippedCoords;
+        }
+
+        getNextColor() {
+          return this.colors[this.polygons.length % this.colors.length];
+        }
+
+        calculateBoundingBox(coords) {
+          let minX = coords[0].x;
+          let minY = coords[0].y;
+          let maxX = coords[0].x;
+          let maxY = coords[0].y;
+
+          for (let i = 1; i < coords.length; i++) {
+            minX = Math.min(minX, coords[i].x);
+            minY = Math.min(minY, coords[i].y);
+            maxX = Math.max(maxX, coords[i].x);
+            maxY = Math.max(maxY, coords[i].y);
+          }
+
+          return {
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY,
+          };
+        }
+
+        rotatePolygon(coords, angle) {
+          if (!angle || angle === 0) {
+            return coords;
+          }
+          const radians = (angle * Math.PI) / 180;
+          const centerX =
+            coords.reduce((sum, point) => sum + point.x, 0) / coords.length;
+          const centerY =
+            coords.reduce((sum, point) => sum + point.y, 0) / coords.length;
+
+          return coords.map((point) => {
+            const dx = point.x - centerX;
+            const dy = point.y - centerY;
+            const rotatedX = dx * Math.cos(radians) - dy * Math.sin(radians);
+            const rotatedY = dx * Math.sin(radians) + dy * Math.cos(radians);
+            return { x: rotatedX + centerX, y: rotatedY + centerY };
+          });
+        }
+
+        addPolygon() {
+          try {
+            const polygonInput = this.polygonCoords.value;
+            const coords = this.parsePolygonCoordinates(polygonInput);
+            const label =
+              this.polygonLabel.value.trim() ||
+              `Polygon ${this.polygons.length + 1}`;
+
+            let angle = parseFloat(this.polygonAngle.value) || 0;
+
+            try {
+              const data = JSON.parse(polygonInput.trim());
+              if (data.angle !== undefined) {
+                angle = parseFloat(data.angle) || 0;
+              }
+            } catch (e) {}
+
+            if (angle < 0 || angle > 360) {
+              throw new Error("Angle must be between 0 and 360 degrees");
+            }
+
+            const rotatedCoords = this.rotatePolygon(coords, angle);
+
+            const naturalWidth = this.uploadedImage.naturalWidth;
+            const naturalHeight = this.uploadedImage.naturalHeight;
+            const clippedCoords = this.validatePolygonCoordinates(
+              rotatedCoords,
+              naturalWidth,
+              naturalHeight
+            );
+
+            const boundingBox = this.calculateBoundingBox(clippedCoords);
+
+            const polygon = {
+              id: Date.now(),
+              coords: clippedCoords,
+              originalCoords: coords,
+              boundingBox: boundingBox,
+              label: label,
+              angle: angle,
+              color: this.getNextColor(),
+            };
+
+            this.polygons.push(polygon);
+
+            this.updatePolygonList();
+            this.clearInputs();
+            this.updateGenerateButton();
+            this.hideError();
+          } catch (error) {
+            this.showError(error.message);
+          }
+        }
+
+        removePolygon(id) {
+          this.polygons = this.polygons.filter((polygon) => polygon.id !== id);
+          this.updatePolygonList();
+          this.updateGenerateButton();
+
+          if (this.polygons.length > 0) {
+            this.generateVisualization();
+          } else {
+            this.imageContainer.style.display = "none";
+            this.coordinatesDisplay.style.display = "none";
+          }
+        }
+
+        updatePolygonList() {
+          if (this.polygons.length === 0) {
+            this.boundingBoxList.classList.remove("has-boxes");
+            return;
+          }
+
+          this.boundingBoxList.classList.add("has-boxes");
+          this.boundingBoxList.innerHTML = "";
+
+          const headerContainer = document.createElement("div");
+          headerContainer.style.cssText =
+            "display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #dee2e6; background: #f8f9fa;";
+          headerContainer.innerHTML = `
+            <div style="font-weight: 600; color: #495057; font-size: 0.9em;">Added Polygons: ${this.polygons.length}</div>
+            <button class="clear-all-btn" onclick="app.clearAllPolygons()">Clear All</button>
+          `;
+          this.boundingBoxList.appendChild(headerContainer);
+
+          this.polygons.forEach((polygon) => {
+            const polygonItem = document.createElement("div");
+            polygonItem.className = "box-item";
+            const coordsText = polygon.coords
+              .map((p) => `(${p.x},${p.y})`)
+              .join(" ");
+            const angleText = polygon.angle ? ` (${polygon.angle}°)` : "";
+            polygonItem.innerHTML = `
+              <div style="display: flex; align-items: center;">
+                <div class="box-color" style="background-color: ${polygon.color};"></div>
+                <div class="box-info">
+                  <div class="box-coordinates">${coordsText}</div>
+                  <div class="box-label">${polygon.label} - ${polygon.coords.length} points${angleText}</div>
+                </div>
+              </div>
+              <div class="box-actions">
+                <button class="remove-box-btn" onclick="app.removePolygon(${polygon.id})">Remove</button>
+              </div>
+            `;
+            this.boundingBoxList.appendChild(polygonItem);
+          });
+        }
+
+        clearInputs() {
+          this.polygonCoords.value = "";
+          this.polygonLabel.value = "";
+          this.polygonAngle.value = "";
+          this.validateAddPolygon();
+        }
+
+        clearAllPolygons() {
+          this.polygons = [];
+          this.updatePolygonList();
+          this.boundingBoxContainer.innerHTML = "";
+        }
+
+        parseBulkPolygonData(text) {
+          const lines = text.split("\n").filter((line) => line.trim() !== "");
+          const polygons = [];
+          let lineNumber = 1;
+
+          for (const line of lines) {
+            try {
+              const trimmedLine = line.trim();
+
+              let coords,
+                label,
+                angle = 0;
+
+              if (trimmedLine.includes(":")) {
+                const colonIndex = trimmedLine.indexOf(":");
+                label = trimmedLine.substring(0, colonIndex).trim();
+                const dataText = trimmedLine.substring(colonIndex + 1).trim();
+
+                try {
+                  const data = JSON.parse(dataText);
+                  if (data.coords) {
+                    coords = data.coords;
+                    angle = data.angle || 0;
+                  } else {
+                    coords = data;
+                  }
+                } catch {
+                  coords = JSON.parse(dataText);
+                }
+              } else {
+                try {
+                  const data = JSON.parse(trimmedLine);
+                  if (data.coords) {
+                    coords = data.coords;
+                    angle = data.angle || 0;
+                    label = data.label || `Polygon ${polygons.length + 1}`;
+                  } else {
+                    coords = data;
+                    label = `Polygon ${polygons.length + 1}`;
+                  }
+                } catch {
+                  coords = JSON.parse(trimmedLine);
+                  label = `Polygon ${polygons.length + 1}`;
+                }
+              }
+
+              if (!Array.isArray(coords)) {
+                throw new Error("Coordinates must be an array");
+              }
+
+              if (coords.length < 3) {
+                throw new Error("Polygon must have at least 3 points");
+              }
+
+              for (let i = 0; i < coords.length; i++) {
+                const point = coords[i];
+                if (!point.hasOwnProperty("x") || !point.hasOwnProperty("y")) {
+                  throw new Error(
+                    `Point ${i + 1} must have x and y properties`
+                  );
+                }
+
+                if (
+                  typeof point.x !== "number" ||
+                  typeof point.y !== "number"
+                ) {
+                  throw new Error(`Point ${i + 1} coordinates must be numbers`);
+                }
+              }
+
+              polygons.push({
+                coords: coords,
+                label: label,
+                angle: angle,
+              });
+            } catch (error) {
+              throw new Error(`Line ${lineNumber}: ${error.message}`);
+            }
+
+            lineNumber++;
+          }
+
+          return polygons;
+        }
+
+        importBulkData() {
+          try {
+            const bulkText = this.bulkData.value.trim();
+            if (!bulkText) {
+              this.showError("Please paste some polygon data to import");
+              return;
+            }
+
+            const parsedPolygons = this.parseBulkPolygonData(bulkText);
+            if (parsedPolygons.length === 0) {
+              this.showError(
+                "No valid polygons found in the data. Please check the format."
+              );
+              return;
+            }
+
+            const naturalWidth = this.uploadedImage.naturalWidth;
+            const naturalHeight = this.uploadedImage.naturalHeight;
+
+            for (let polygon of parsedPolygons) {
+              polygon.originalCoords = [...polygon.coords];
+              const rotatedCoords = this.rotatePolygon(
+                polygon.coords,
+                polygon.angle || 0
+              );
+              const clippedCoords = this.validatePolygonCoordinates(
+                rotatedCoords,
+                naturalWidth,
+                naturalHeight
+              );
+              polygon.coords = clippedCoords;
+            }
+
+            this.polygons = [];
+
+            parsedPolygons.forEach((polygon, index) => {
+              const boundingBox = this.calculateBoundingBox(polygon.coords);
+              const polygonObj = {
+                id: Date.now() + index,
+                coords: polygon.coords,
+                originalCoords: polygon.originalCoords || polygon.coords,
+                boundingBox: boundingBox,
+                label: polygon.label,
+                angle: polygon.angle || 0,
+                color: this.colors[index % this.colors.length],
+              };
+              this.polygons.push(polygonObj);
+            });
+
+            this.updatePolygonList();
+            this.updateGenerateButton();
+            this.hideError();
+
+            this.showSuccess(
+              `Successfully imported ${parsedPolygons.length} polygons!`
+            );
+          } catch (error) {
+            this.showError(error.message);
+          }
+        }
+
+        showSuccess(message) {
+          this.errorMessage.textContent = message;
+          this.errorMessage.style.background = "#d4edda";
+          this.errorMessage.style.color = "#155724";
+          this.errorMessage.style.borderLeftColor = "#28a745";
+          this.errorMessage.style.display = "block";
+
+          setTimeout(() => {
+            this.errorMessage.style.background = "#ffe6e6";
+            this.errorMessage.style.color = "#d63031";
+            this.errorMessage.style.borderLeftColor = "#d63031";
+          }, 3000);
+        }
+
+        generateVisualization() {
+          try {
+            if (this.polygons.length === 0) {
+              this.showError("Please add at least one polygon");
+              return;
+            }
+
+            this.boundingBoxContainer.innerHTML = "";
+
+            const naturalWidth = this.uploadedImage.naturalWidth;
+            const naturalHeight = this.uploadedImage.naturalHeight;
+            const displayWidth = this.uploadedImage.offsetWidth;
+            const displayHeight = this.uploadedImage.offsetHeight;
+
+            const scaleX = displayWidth / naturalWidth;
+            const scaleY = displayHeight / naturalHeight;
+
+            this.polygons.forEach((polygon) => {
+              const { coords, color, label, boundingBox } = polygon;
+
+              const svg = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "svg"
+              );
+              svg.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+              `;
+
+              const polygonElement = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "polygon"
+              );
+
+              const scaledPoints = coords
+                .map((point) => `${point.x * scaleX},${point.y * scaleY}`)
+                .join(" ");
+
+              polygonElement.setAttribute("points", scaledPoints);
+              polygonElement.style.cssText = `
+                fill: ${color}20;
+                stroke: ${color};
+                stroke-width: 2;
+                stroke-dasharray: none;
+              `;
+
+              svg.appendChild(polygonElement);
+
+              const boundingRect = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "rect"
+              );
+              const scaledBBox = {
+                x: boundingBox.x * scaleX,
+                y: boundingBox.y * scaleY,
+                width: boundingBox.width * scaleX,
+                height: boundingBox.height * scaleY,
+              };
+
+              boundingRect.setAttribute("x", scaledBBox.x);
+              boundingRect.setAttribute("y", scaledBBox.y);
+              boundingRect.setAttribute("width", scaledBBox.width);
+              boundingRect.setAttribute("height", scaledBBox.height);
+              boundingRect.style.cssText = `
+                fill: none;
+                stroke: ${color};
+                stroke-width: 2;
+                stroke-dasharray: 5,5;
+              `;
+
+              svg.appendChild(boundingRect);
+
+              if (scaledBBox.width > 60 && scaledBBox.height > 25) {
+                const labelElement = document.createElement("div");
+                labelElement.style.cssText = `
+                  position: absolute;
+                  top: ${scaledBBox.y - 25}px;
+                  left: ${scaledBBox.x}px;
+                  background: ${color};
+                  color: white;
+                  padding: 4px 8px;
+                  border-radius: 4px;
+                  font-size: 12px;
+                  font-weight: 600;
+                  white-space: nowrap;
+                  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                  pointer-events: none;
+                `;
+                labelElement.textContent = label;
+                this.boundingBoxContainer.appendChild(labelElement);
+              }
+
+              this.boundingBoxContainer.appendChild(svg);
+            });
+
+            this.imageContainer.style.display = "inline-block";
+            this.coordinatesDisplay.style.display = "block";
+
+            const totalArea = this.polygons.reduce((sum, polygon) => {
+              return (
+                sum + polygon.boundingBox.width * polygon.boundingBox.height
+              );
+            }, 0);
+
+            this.coordinatesText.innerHTML = `
+              <div><strong>Total Polygons:</strong> ${
+                this.polygons.length
+              }</div>
+              <div><strong>Image Dimensions:</strong> ${naturalWidth} × ${naturalHeight} pixels</div>
+              <div><strong>Total Bounding Box Area:</strong> ${totalArea.toLocaleString()} pixels²</div>
+              <div style="margin-top: 10px;"><strong>Polygon Details:</strong></div>
+              ${this.polygons
+                .map((polygon) => {
+                  const pointsText = polygon.coords
+                    .map((p) => `(${p.x},${p.y})`)
+                    .join(", ");
+                  const area =
+                    polygon.boundingBox.width * polygon.boundingBox.height;
+                  const angleText = polygon.angle
+                    ? ` | Angle: ${polygon.angle}°`
+                    : "";
+                  return `<div style="margin: 5px 0; padding: 8px; background: #f8f9fa; border-radius: 4px; border-left: 4px solid ${
+                    polygon.color
+                  };">
+                    <span style="font-weight: 600;">${polygon.label}:</span><br>
+                    <span style="font-size: 0.9em; color: #6c757d;">Points: ${pointsText}</span><br>
+                    <span style="font-size: 0.9em; color: #6c757d;">Bounding Box: (${
+                      polygon.boundingBox.x
+                    }, ${polygon.boundingBox.y}, ${
+                    polygon.boundingBox.width
+                  }, ${polygon.boundingBox.height})</span><br>
+                    <span style="color: #6c757d;">Area: ${area.toLocaleString()} px²${angleText}</span>
+                  </div>`;
+                })
+                .join("")}
+            `;
+
+            this.hideError();
+          } catch (error) {
+            this.showError(error.message);
+          }
+        }
+
+        showError(message) {
+          this.errorMessage.textContent = message;
+          this.errorMessage.style.display = "block";
+        }
+
+        showWarning(message) {
+          this.errorMessage.textContent = message;
+          this.errorMessage.style.background = "#fff3cd";
+          this.errorMessage.style.color = "#856404";
+          this.errorMessage.style.borderLeftColor = "#ffc107";
+          this.errorMessage.style.display = "block";
+
+          setTimeout(() => {
+            this.errorMessage.style.background = "#ffe6e6";
+            this.errorMessage.style.color = "#d63031";
+            this.errorMessage.style.borderLeftColor = "#d63031";
+          }, 5000);
+        }
+
+        hideError() {
+          this.errorMessage.style.display = "none";
+        }
+      }
+
+      // Initialize the application when the page loads
+      let app;
+      let pdfMerger;
+      let measurementTool;
+      let zipPdfMerger;
+      document.addEventListener("DOMContentLoaded", () => {
+        app = new PolygonBoundingBoxGenerator();
+        pdfMerger = new PDFMerger();
+        measurementTool = new MeasurementTool();
+        zipPdfMerger = new ZipPdfMerger();
+      });
+    </script>
+  </body>
+</html>
